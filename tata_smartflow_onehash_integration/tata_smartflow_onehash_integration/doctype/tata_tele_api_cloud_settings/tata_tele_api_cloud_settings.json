@@ -5,6 +5,7 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "is_lead_creation_required",
   "api_token",
   "url",
   "did_number"
@@ -24,12 +25,18 @@
    "fieldname": "did_number",
    "fieldtype": "Data",
    "label": "DID Number"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_lead_creation_required",
+   "fieldtype": "Check",
+   "label": "Is Lead Creation Required"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-01-29 15:40:37.529860",
+ "modified": "2025-07-15 11:29:13.905134",
  "modified_by": "Administrator",
  "module": "Tata Smartflow Onehash Integration",
  "name": "Tata Tele API Cloud Settings",
@@ -46,6 +53,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []
