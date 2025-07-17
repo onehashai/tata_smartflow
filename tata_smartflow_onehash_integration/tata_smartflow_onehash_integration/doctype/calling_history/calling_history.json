@@ -18,23 +18,27 @@
   {
    "fieldname": "agent_name",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Agent Name"
   },
   {
    "fieldname": "call_type",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Call Type",
    "options": "\nOutbound\nInbound"
   },
   {
    "fieldname": "status",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Status",
    "options": "\nMissed\nAnswered"
   },
   {
    "fieldname": "call_date",
    "fieldtype": "Date",
+   "in_list_view": 1,
    "label": "Call Date"
   },
   {
@@ -45,23 +49,26 @@
   {
    "fieldname": "call_time",
    "fieldtype": "Time",
+   "in_list_view": 1,
    "label": "Call Time"
   },
   {
    "fieldname": "duration",
    "fieldtype": "Int",
+   "in_list_view": 1,
    "label": "Duration (In Seconds)"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-02-10 11:42:40.877159",
+ "modified": "2025-07-17 14:37:58.859644",
  "modified_by": "Administrator",
  "module": "Tata Smartflow Onehash Integration",
  "name": "Calling History",
  "owner": "Administrator",
  "permissions": [],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

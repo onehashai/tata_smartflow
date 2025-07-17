@@ -1,5 +1,5 @@
 frappe.ui.form.on('Sales Order', {
-    on_load: function (frm) {
+    refresh: function (frm) {
 
         frm.add_custom_button(__('Call'), function () {
             const phoneNumber = frm.doc.contact_phone || frm.doc.contact_mobile;
