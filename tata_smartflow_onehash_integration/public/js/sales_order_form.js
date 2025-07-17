@@ -1,7 +1,6 @@
 frappe.ui.form.on('Sales Order', {
     on_load: function (frm) {
 
-        // Add "Call" custom button
         frm.add_custom_button(__('Call'), function () {
             const phoneNumber = frm.doc.contact_phone || frm.doc.contact_mobile;
 
@@ -10,7 +9,6 @@ frappe.ui.form.on('Sales Order', {
                 return;
             }
 
-            // First, get the Tata Tele User based on current user's email
             frappe.call({
                 method: "frappe.client.get_value",
                 args: {
@@ -26,7 +24,6 @@ frappe.ui.form.on('Sales Order', {
 
                     const agent_name = r.message.name;
 
-                    // Show prompt for client number
                     frappe.prompt([
                         {
                             fieldname: 'client_number',
@@ -35,7 +32,6 @@ frappe.ui.form.on('Sales Order', {
                             default: phoneNumber,
                         }
                     ], function(values) {
-                        // Get agent phone number and proceed with call
                         frappe.call({
                             method: "frappe.client.get_value",
                             args: {
@@ -51,14 +47,13 @@ frappe.ui.form.on('Sales Order', {
                                     return;
                                 }
 
-                                // Call the backend API with doctype parameter
                                 frappe.call({
                                     method: "tata_smartflow_onehash_integration.tata_smartflow_onehash_integration.api.calling_api.initiate_call",
                                     args: {
                                         docname: frm.doc.name,
                                         agent_name: agent_name,
                                         client_phone_number: values.client_number,
-                                        doctype: "Sales Order"  // Add doctype parameter
+                                        doctype: "Sales Order"
                                     },
                                     callback: function (response) {
                                         if (response.message) {
