@@ -10,7 +10,6 @@ def webhook_call_handler():
     """Handle incoming webhook data for call records"""
     try:
         call_data = frappe.request.json
-        frappe.log_error("Webhook call data received", call_data)
         
         if not call_data.get('call_id'):
             return {
@@ -702,7 +701,7 @@ def initiate_call(docname, agent_name, client_phone_number, doctype="Lead"):
             "success": False,
             "message": f"Failed to initiate call: {str(e)}"
         }
-        
+
         
 @frappe.whitelist()
 def hangup_call(docname):
