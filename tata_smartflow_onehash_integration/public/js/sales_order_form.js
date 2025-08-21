@@ -1,6 +1,8 @@
 frappe.ui.form.on('Sales Order', {
     refresh: function (frm) {
 
+        console.log("Sales Order Form Loaded", frm.doc.name);
+
         frm.add_custom_button(__('Call'), function () {
             const phoneNumber = frm.doc.contact_phone || frm.doc.contact_mobile;
 
@@ -17,6 +19,7 @@ frappe.ui.form.on('Sales Order', {
                     fieldname: ["name"]
                 },
                 callback: function(r) {
+                    console.log("Agent Name Response:", r);
                     if (!r.message || !r.message.name) {
                         frappe.msgprint(__('No Tata Tele User found for current user.'));
                         return;
@@ -40,20 +43,21 @@ frappe.ui.form.on('Sales Order', {
                                 fieldname: ["phone_number"]
                             },
                             callback: function (response) {
+                                console.log("Agent Phone Number Response:", response);
                                 const agentPhoneNumber = response.message.phone_number;
 
                                 if (!agentPhoneNumber) {
                                     frappe.msgprint(__('No phone number found for the selected agent.'));
                                     return;
                                 }
-
+                                
                                 frappe.call({
                                     method: "tata_smartflow_onehash_integration.tata_smartflow_onehash_integration.api.calling_api.initiate_call",
                                     args: {
+                                        doctype: "Sales Order",
                                         docname: frm.doc.name,
                                         agent_name: agent_name,
                                         client_phone_number: values.client_number,
-                                        doctype: "Sales Order"
                                     },
                                     callback: function (response) {
                                         if (response.message) {

@@ -10,6 +10,7 @@ def webhook_call_handler():
     """Handle incoming webhook data for call records"""
     try:
         call_data = frappe.request.json
+        frappe.log_error("Webhook call data received", call_data)
         
         if not call_data.get('call_id'):
             return {
@@ -18,7 +19,7 @@ def webhook_call_handler():
             }
             
         agent_number = format_agent_number(call_data.get('answered_agent_number', ''))
-        # customer_number = call_data.get("call_to_number", '').replace('+', '') if call_data.get("call_to_number") else ''
+        agent_name = format_agent_name(call_data.get('answered_agent_name'))
 
         if call_data.get('direction') == 'clicktocall':
             customer_number = call_data.get("call_to_number", '').replace('+', '') if call_data.get("call_to_number") else ''
@@ -27,31 +28,46 @@ def webhook_call_handler():
 
         if customer_number and len(customer_number) == 10:
             customer_number = '91' + customer_number
-        
-        call_doc = frappe.get_doc({
-            "doctype": "Tata Tele Call Logs",
+
+        raw_status = get_call_status(call_data)
+        if raw_status and 'answered' in raw_status.lower():
+            mapped_status = 'Answered'
+        elif raw_status and 'missed' in raw_status.lower():
+            mapped_status = 'Missed'
+        else:
+            mapped_status = raw_status
+
+        call_payload = {
             "uuid": call_data.get('uuid'),
             "call_id": call_data.get('call_id'),
             "agent_name": format_agent_name(call_data.get('answered_agent_name')),
             "call_type": "Outbound" if call_data.get('direction') == 'clicktocall' else "Inbound",
-            "call_date": call_data.get('start_stamp', '').split(' ')[0] if call_data.get('start_stamp') else now(),
-            "call_time": call_data.get('start_stamp', '').split(' ')[1] if call_data.get('start_stamp') else now(),
+            "call_date": call_data.get('start_stamp', '').split(' ')[0] if call_data.get('start_stamp') else frappe.utils.today(),
+            "call_time": call_data.get('start_stamp', '').split(' ')[1] if call_data.get('start_stamp') else frappe.utils.nowtime(),
             "last_entry_time": call_data.get('end_stamp'),
             "duration": call_data.get('duration'),
             "recording_url": call_data.get('recording_url'),
             "agent_phone_number": agent_number,
             "customer_number": customer_number,
-            "status": get_call_status(call_data),
-        })
+            "status": mapped_status,
+        }
 
         existing_log = frappe.db.exists("Tata Tele Call Logs", {"call_id": call_data.get('call_id')})
 
         if existing_log:
-            return {
-                "success": False,
-                "message": f"Call log with ID {call_data.get('call_id')} already exists"
-            }
+            call_doc = frappe.get_doc("Tata Tele Call Logs", existing_log)
+            
+            for field, value in call_payload.items():
+                if value is not None and value != '':
+                    setattr(call_doc, field, value)
+            
+            call_doc.save(ignore_permissions=True)
         else:
+            call_payload.update({
+                "doctype": "Tata Tele Call Logs",
+            })
+
+            call_doc = frappe.get_doc(call_payload)
             call_doc.insert(ignore_permissions=True)
             
             if call_doc.call_type == "Inbound":
@@ -68,8 +84,6 @@ def webhook_call_handler():
 
             if call_data.get('call_flow'):
                 insert_hangup_records(call_doc.name, call_data['call_flow'])
-
-            frappe.db.commit()
         
         sync_to_lead_history(call_doc)
 
@@ -96,14 +110,28 @@ def sync_to_lead_history(call_doc):
             fields=["name"]
         )
 
-        for lead in leads:
-            lead_doc = frappe.get_doc("Lead", lead.name)
-            lead_doc.call_status = call_doc.call_status
-            
-            existing_record = False
-            for history_entry in lead_doc.calling_history:
-                if history_entry.call_id == call_doc.call_id:
-                    history_entry.update({
+        if leads:
+            for lead in leads:
+                lead_doc = frappe.get_doc("Lead", lead.name)
+                lead_doc.call_status = call_doc.call_status
+                
+                existing_record = False
+                for history_entry in lead_doc.calling_history:
+                    if history_entry.call_id == call_doc.call_id:
+                        history_entry.update({
+                            "agent_name": format_agent_name(call_doc.agent_name),
+                            "call_type": call_doc.call_type,
+                            "status": call_doc.status,
+                            "call_date": call_doc.call_date,
+                            "call_time": call_doc.call_time,
+                            "duration": call_doc.duration,
+                        })
+                        existing_record = True
+                        break
+                
+                if not existing_record:
+                    lead_doc.append("calling_history", {
+                        "call_id": call_doc.call_id,
                         "agent_name": format_agent_name(call_doc.agent_name),
                         "call_type": call_doc.call_type,
                         "status": call_doc.status,
@@ -111,24 +139,12 @@ def sync_to_lead_history(call_doc):
                         "call_time": call_doc.call_time,
                         "duration": call_doc.duration,
                     })
-                    existing_record = True
-                    break
-            
-            if not existing_record:
-                lead_doc.append("calling_history", {
-                    "call_id": call_doc.call_id,
-                    "agent_name": format_agent_name(call_doc.agent_name),
-                    "call_type": call_doc.call_type,
-                    "status": call_doc.status,
-                    "call_date": call_doc.call_date,
-                    "call_time": call_doc.call_time,
-                    "duration": call_doc.duration,
-                })
-            
-            lead_doc.save(ignore_permissions=True)
+                
+                lead_doc.save(ignore_permissions=True)
             
     except Exception as e:
         pass
+
 
 def get_call_status(call_data):
     """Determine call status based on webhook data"""
@@ -148,17 +164,23 @@ def get_call_status(call_data):
     else:
         return 'Failed'
 
+
 @frappe.whitelist(allow_guest=True)  
 def format_agent_name(agent_name):
     if not agent_name:
         return agent_name
+
+    agent_name = agent_name.strip()
+    if agent_name == '_name' or '_name' in agent_name:
+        return None
 
     match = re.match(r'^(Agent)\s*(\d+)', agent_name, re.IGNORECASE)
     if match:
         return f"{match.group(1)} {match.group(2)}"
 
     return agent_name
-    
+
+
 def create_lead_for_missed_call(phone_number, call_data=None):
     """Create a new lead for missed calls if it doesn't exist"""
     try:
@@ -201,11 +223,15 @@ def format_agent_number(phone_number):
         return phone_number
     
     phone_number = phone_number.strip()
+
+    if phone_number == '_number' or '_number' in phone_number:
+        return None
     
     if phone_number.startswith('+91'):
         phone_number = phone_number[3:]   
         
     return phone_number
+
 
 def insert_missed_agents(call_log_name, missed_agents):
     """Update missed agents for a call log"""
@@ -609,6 +635,7 @@ def fetch_users():
 @frappe.whitelist()
 def initiate_call(docname, agent_name, client_phone_number, doctype="Lead"):
     try:
+        
         settings = frappe.get_single("Tata Tele API Cloud Settings")
         if not settings:
             return {
@@ -656,8 +683,12 @@ def initiate_call(docname, agent_name, client_phone_number, doctype="Lead"):
         response_data = json.loads(response.read().decode("utf-8"))
         
         if response_data.get("success") == True:
-            doc = frappe.get_doc(doctype, docname)
-            doc.call_id = response_data.get("call_id")
+            doc = frappe.get_doc({
+                "doctype": "Tata Tele Call Logs",
+                "call_id": response_data.get("call_id"),
+                "reference_doctype": doctype,
+            })
+            doc.set("reference_name", docname)
             doc.save(ignore_permissions=True)
 
         return {
@@ -671,6 +702,7 @@ def initiate_call(docname, agent_name, client_phone_number, doctype="Lead"):
             "success": False,
             "message": f"Failed to initiate call: {str(e)}"
         }
+        
         
 @frappe.whitelist()
 def hangup_call(docname):

@@ -58,6 +58,11 @@
    "fieldtype": "Column Break"
   },
   {
+    "fieldname": "uuid",
+    "fieldtype": "Data",
+    "label": "UUID"
+  },
+  {
    "fieldname": "agent_name",
    "fieldtype": "Data",
    "label": "Agent Name"
@@ -93,6 +98,23 @@
    "fieldname": "description",
    "fieldtype": "Small Text",
    "label": "Description"
+  },
+  {
+   "fieldname": "reference_doctype",
+   "fieldtype": "Link",
+   "label": "Reference Doctype",
+   "options": "DocType"
+  },
+  {
+    "fieldname": "reference_name",
+    "fieldtype": "Dynamic Link",
+    "label": "Reference Name",
+    "options": "reference_doctype"
+  },
+  {
+   "fieldname": "customer_number",
+   "fieldtype": "Data",
+   "label": "Customer Number"
   },
   {
    "fieldname": "calling_records_section",
