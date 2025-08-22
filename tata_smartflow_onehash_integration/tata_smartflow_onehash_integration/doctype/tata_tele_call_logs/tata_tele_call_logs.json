@@ -112,11 +112,6 @@
     "options": "reference_doctype"
   },
   {
-   "fieldname": "customer_number",
-   "fieldtype": "Data",
-   "label": "Customer Number"
-  },
-  {
    "fieldname": "calling_records_section",
    "fieldtype": "Section Break",
    "label": "Calling Records"
