@@ -50,7 +50,8 @@ doctype_list_js = {"Tata Tele Users" : "public/js/user_list.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
 
 doctype_js = {
-    "Lead": "public/js/lead_form.js"
+    "Lead": "public/js/lead_form.js",
+    "Sales Order": "public/js/sales_order_form.js",
 }
 
 # Svg Icons
@@ -255,3 +256,17 @@ scheduler_events = {
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
 
+fixtures = [
+    {
+        "dt": "Custom Field",
+        "filters": [
+            [
+                "name",
+                "in",
+                (
+                    "Sales Order-call_id",
+                ),
+            ]
+        ],
+    }
+]
