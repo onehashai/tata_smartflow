@@ -68,11 +68,6 @@
    "label": "Agent Name"
   },
   {
-   "fieldname": "customer_number",
-   "fieldtype": "Data",
-   "label": "Customer Number"
-  },
-  {
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
